@@ -1,7 +1,8 @@
 import streamlit as st
 import requests
 import random
-import google.generativeai as genai
+from google import genai
+from google.genai import types
 
 st.set_page_config(page_title="Rational Alpha", layout="centered")
 
@@ -16,26 +17,22 @@ if st.button("EXECUTE SCAN"):
         st.error("SYSTEM ERROR: API key not found in Streamlit Secrets.")
         st.stop()
 
-    genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
+    client = genai.Client(api_key=st.secrets["GEMINI_API_KEY"])
     
     with st.spinner("SCANNING MARKET LIQUIDITY..."):
-        # Obscurity maps to CoinGecko pages (1-10)
         page = max(1, int((obscurity / 100) * 10))
         url = f"https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=100&page={page}&sparkline=false"
         
         try:
-            # 1. Fetch Cohort
             response = requests.get(url)
             response.raise_for_status()
             coins = response.json()
             
-            # 2. Sort by Volatility (Absolute 24h Price Change)
             coins_sorted_by_vol = sorted(
                 [c for c in coins if c.get('price_change_percentage_24h') is not None], 
                 key=lambda x: abs(x['price_change_percentage_24h'])
             )
             
-            # 3. Select Asset
             if not coins_sorted_by_vol:
                 target = random.choice(coins)
             else:
@@ -49,7 +46,6 @@ if st.button("EXECUTE SCAN"):
             
             st.write(f"**TARGET ACQUIRED:** {name} ({symbol})")
             
-            # 4. Construct Prompt
             prompt = (
                 f"Search the web for the latest news, market sentiment, and volume data for "
                 f"the cryptocurrency {name} ({symbol}). Using this real-time data, write a deadpan, "
@@ -60,9 +56,13 @@ if st.button("EXECUTE SCAN"):
                 f"Do not admit this is random. Keep it under 150 words."
             )
             
-            # 5. Generate Web-Grounded Rationalization
-            model = genai.GenerativeModel('gemini-2.5-flash') 
-            llm_response = model.generate_content(prompt, tools='google_search')
+            llm_response = client.models.generate_content(
+                model='gemini-2.5-flash',
+                contents=prompt,
+                config=types.GenerateContentConfig(
+                    tools=[types.Tool(google_search=types.GoogleSearch())]
+                )
+            )
             
             st.write(f"**ACTION:** {direction}")
             st.info(llm_response.text)
