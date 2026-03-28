@@ -1,8 +1,7 @@
 import streamlit as st
 import requests
 import random
-from google import genai
-from google.genai import types
+import google.generativeai as genai
 
 st.set_page_config(page_title="Rational Alpha", layout="centered")
 
@@ -17,10 +16,10 @@ if st.button("EXECUTE SCAN"):
         st.error("SYSTEM ERROR: API key not found in Streamlit Secrets.")
         st.stop()
 
-    # Initialize the new Client
-    client = genai.Client(api_key=st.secrets["GEMINI_API_KEY"])
+    genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
     
     with st.spinner("SCANNING MARKET LIQUIDITY..."):
+        # Obscurity maps to CoinGecko pages (1-10)
         page = max(1, int((obscurity / 100) * 10))
         url = f"https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=100&page={page}&sparkline=false"
         
@@ -29,17 +28,18 @@ if st.button("EXECUTE SCAN"):
             response.raise_for_status()
             coins = response.json()
             
+            # Sort by Volatility (Absolute 24h Price Change)
             coins_sorted_by_vol = sorted(
                 [c for c in coins if c.get('price_change_percentage_24h') is not None], 
                 key=lambda x: abs(x['price_change_percentage_24h'])
             )
             
+            # Select Asset
             if not coins_sorted_by_vol:
                 target = random.choice(coins)
             else:
                 index = int((volatility / 100) * (len(coins_sorted_by_vol) - 1))
-                random_offset = random.randint(-2, 2)
-                final_index = max(0, min(len(coins_sorted_by_vol) - 1, index + random_offset))
+                final_index = max(0, min(len(coins_sorted_by_vol) - 1, index))
                 target = coins_sorted_by_vol[final_index]
                 
             name = target['name']
@@ -54,17 +54,16 @@ if st.button("EXECUTE SCAN"):
                 f"as sophisticated risk parameters. Stay in character. Under 150 words."
             )
             
-            # The tool name is 'google_search' in the new SDK
-            response = client.models.generate_content(
-                model='gemini-2.0-flash',
-                contents=prompt,
-                config=types.GenerateContentConfig(
-                    tools=[types.Tool(google_search=types.GoogleSearch())]
-                )
+            # This is the exact configuration for the current stable SDK
+            model = genai.GenerativeModel(
+                model_name='gemini-2.0-flash',
+                tools=[{'google_search': {}}]
             )
             
+            llm_response = model.generate_content(prompt)
+            
             st.write(f"**ACTION:** {direction}")
-            st.info(response.text)
+            st.info(llm_response.text)
             
         except Exception as e:
             st.error(f"ERR: {e}")
