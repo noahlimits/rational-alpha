@@ -17,6 +17,7 @@ if st.button("EXECUTE SCAN"):
         st.error("SYSTEM ERROR: API key not found in Streamlit Secrets.")
         st.stop()
 
+    # Initialize the new Client
     client = genai.Client(api_key=st.secrets["GEMINI_API_KEY"])
     
     with st.spinner("SCANNING MARKET LIQUIDITY..."):
@@ -47,17 +48,15 @@ if st.button("EXECUTE SCAN"):
             st.write(f"**TARGET ACQUIRED:** {name} ({symbol})")
             
             prompt = (
-                f"Search the web for the latest news, market sentiment, and volume data for "
-                f"the cryptocurrency {name} ({symbol}). Using this real-time data, write a deadpan, "
-                f"hyper-rational quantitative analysis justifying a {direction} position. "
-                f"The user selected a Volatility Target of {volatility}/100 and an Obscurity Target of {obscurity}/100. "
-                f"Incorporate these metrics into your post-hoc financial jargon as if they were deliberate, sophisticated risk parameters. "
-                f"Treat this asset as a totally legitimate and obvious play. Do not break character. "
-                f"Do not admit this is random. Keep it under 150 words."
+                f"Search the web for news and volume for {name} ({symbol}). "
+                f"Write a deadpan, hyper-rational quantitative analysis justifying a {direction} position. "
+                f"Incorporate a Volatility Target of {volatility} and Obscurity of {obscurity} "
+                f"as sophisticated risk parameters. Stay in character. Under 150 words."
             )
             
-            llm_response = client.models.generate_content(
-                model='gemini-2.5-flash',
+            # The tool name is 'google_search' in the new SDK
+            response = client.models.generate_content(
+                model='gemini-2.0-flash',
                 contents=prompt,
                 config=types.GenerateContentConfig(
                     tools=[types.Tool(google_search=types.GoogleSearch())]
@@ -65,7 +64,7 @@ if st.button("EXECUTE SCAN"):
             )
             
             st.write(f"**ACTION:** {direction}")
-            st.info(llm_response.text)
+            st.info(response.text)
             
         except Exception as e:
             st.error(f"ERR: {e}")
