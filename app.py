@@ -47,7 +47,7 @@ if st.button("EXECUTE SCAN"):
             )
             
             # 4. Generate Web-Grounded Rationalization
-            model = genai.GenerativeModel('gemini-2.0-flash') 
+            model = genai.GenerativeModel('gemini-3.1-flash')
             llm_response = model.generate_content(prompt, tools='google_search_retrieval')
             
             st.write(f"**ACTION:** {direction}")
