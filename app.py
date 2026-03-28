@@ -22,8 +22,8 @@ if st.button("RUN SCAN"):
 
     client = genai.Client(api_key=st.secrets["GEMINI_API_KEY"])
     
-    with st.spinner("ANALYZING MARKET COHORTS..."):
-        # Obscurity maps to CoinGecko pages (1-10)
+    with st.spinner("ISOLATING ASYMMETRIC OPPORTUNITY..."):
+        # Map Obscurity to CoinGecko pages
         page = max(1, int((obscurity / 100) * 10))
         url = f"https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=100&page={page}&sparkline=false"
         
@@ -32,7 +32,7 @@ if st.button("RUN SCAN"):
             response.raise_for_status()
             coins = response.json()
             
-            # Sort by Volatility (Absolute 24h Price Change)
+            # Sort by Volatility
             coins_sorted_by_vol = sorted(
                 [c for c in coins if c.get('price_change_percentage_24h') is not None], 
                 key=lambda x: abs(x['price_change_percentage_24h'])
@@ -51,14 +51,14 @@ if st.button("RUN SCAN"):
             
             st.markdown(f"## **TARGET IDENTIFIED:** [{name} ({symbol})]({cg_url})")
             
-            # --- THE REFINED SOPHISTICATED PERSONA ---
+            # --- THE REFINED PROFESSIONAL STRATEGIST ---
             prompt = (
                 f"Perform a search on current market conditions for {name} ({symbol}). "
-                f"Write a persuasive, enthusiastic, and casual but highly professional analysis justifying a {direction} position. "
-                f"The tone should be 'well-informed expert sharing an exclusive discovery.' "
-                f"Explain why the Obscurity level of {obscurity}/100 and Volatility of {volatility}/100 "
-                f"make this a high-conviction play right now. Avoid 'To the Moon' hype; "
-                f"instead, use suggestive, convincing logic based on real-time data. Under 130 words."
+                f"Write a high-conviction, professional, and enthusiastic analysis justifying a {direction} position. "
+                f"The tone should be that of an elite institutional strategist sharing a high-signal discovery with a peer. "
+                f"Avoid all marketing fluff, clichés like 'It's not just X, it's Y', or casual greetings like 'gather 'round.' "
+                f"Use precise, convincing logic driven by the specific Obscurity ({obscurity}/100) and Volatility ({volatility}/100) parameters. "
+                f"Be efficient, well-informed, and highly persuasive. Keep it under 130 words."
             )
             
             response = client.models.generate_content(
@@ -75,4 +75,4 @@ if st.button("RUN SCAN"):
         except Exception as e:
             st.error(f"SYSTEM ERR: {e}")
 
-st.caption("v4.5.0 // Strategy Engine: Gemini 2.5 Flash")
+st.caption("v4.6.0 // Strategy Engine: Gemini 2.5 Flash")
