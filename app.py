@@ -15,7 +15,7 @@ volatility = st.slider("Target Volatility (Delta):", 0, 100, 50)
 obscurity = st.slider("Target Obscurity (Alpha Depth):", 0, 100, 50)
 
 # --- EXECUTION LOGIC ---
-if st.button("RUN QUANT SCAN"):
+if st.button("RUN SCAN"):
     if "GEMINI_API_KEY" not in st.secrets:
         st.error("SYSTEM ERROR: API key not found in Streamlit Secrets.")
         st.stop()
