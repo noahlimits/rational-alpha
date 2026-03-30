@@ -63,13 +63,16 @@ def get_alpha_scan(direction, volatility, obscurity, api_key):
 
     # 3. AI Generation
     client = genai.Client(api_key=api_key)
+    
+    # Strictly reinforced negative constraints to eliminate "LLM Slop"
     prompt = (
-        f"Research {target_data['name']} ({target_data['symbol']}) market dynamics. "
-        f"Provide a high-conviction, institutional-grade analysis for a {direction} position. "
-        f"The tone should be enthusiastic, casual but professional, and highly convincing. "
-        f"Zero fluff. Avoid clichés like 'It's not just X, it's Y.' "
-        f"Contextualize Volatility ({volatility}/100) and Obscurity ({obscurity}/100) "
-        f"as the primary variables in this thesis. Max 125 words."
+        f"Research current market dynamics for {target_data['name']} ({target_data['symbol']}). "
+        f"Provide a high-conviction, professional, and enthusiastic analysis justifying a {direction} position. "
+        f"STRICT CONSTRAINT: Do not use the 'It's not just X, it's Y' or 'This isn't just A, it's B' format. "
+        f"Avoid grandiose metaphors (e.g., 'operational heartbeat,' 'digital gold,' 'engine of growth'). "
+        f"This is an institutional briefing. Be persuasive by using data, volume trends, and specific "
+        f"market sentiment. Contextualize Volatility ({volatility}/100) and Obscurity ({obscurity}/100) "
+        f"directly as trade variables. Max 125 words."
     )
     
     response = client.models.generate_content(
@@ -104,7 +107,7 @@ if st.button("Run Scan"):
         st.error("SYSTEM ERROR: API key not found.")
         st.stop()
 
-    with st.spinner("SYNCHRONIZING MARKET DATA AND ANALYSIS..."):
+    with st.spinner("ISOLATING ASYMMETRIC OPPORTUNITY..."):
         target_info, analysis_text = get_alpha_scan(direction, vol_val, obs_val, api_key)
         
         if target_info:
@@ -115,4 +118,4 @@ if st.button("Run Scan"):
         else:
             st.error(analysis_text)
 
-st.caption("v5.0.1")
+st.caption("v5.1.0")
