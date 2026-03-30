@@ -7,21 +7,24 @@ from google.genai import types
 # --- CONFIGURATION ---
 st.set_page_config(page_title="Rational Alpha", layout="centered")
 
+# --- SESSION STATE FOR RANDOM START ---
+if 'vol_start' not in st.session_state:
+    st.session_state.vol_start = random.uniform(0.0, 100.0)
+if 'obs_start' not in st.session_state:
+    st.session_state.obs_start = random.uniform(0.0, 100.0)
+
 st.title("🏛️ The Alpha Desk")
 
-# --- DEFINITIONS FOR TOOLTIPS ---
+# --- DEFINITIONS ---
 VOL_HELP = (
     "**Volatility (Delta)** measures 24-hour price velocity.\n\n"
-    "* **High Delta:** Targets 'high-octane' assets with significant price swings. "
-    "Ideal for aggressive momentum plays.\n"
-    "* **Low Delta:** Filters for consolidation or stable action, "
-    "providing a controlled environment for conviction."
+    "* **High Delta:** Targets 'high-octane' assets with significant price swings.\n"
+    "* **Low Delta:** Filters for consolidation or stable action."
 )
 
 OBS_HELP = (
     "**Obscurity (Alpha Depth)** defines market cap and liquidity tier.\n\n"
-    "* **High Alpha Depth:** Targets the market periphery (micro-caps) where "
-    "information asymmetry is greatest.\n"
+    "* **High Alpha Depth:** Targets the market periphery (micro-caps).\n"
     "* **Low Alpha Depth:** Restricts the scan to high-liquidity 'blue chip' assets."
 )
 
@@ -36,33 +39,27 @@ def fetch_market_data(page, cg_key):
         "page": page,
         "sparkline": "false"
     }
-    headers = {
-        "accept": "application/json",
-        "x-cg-demo-api-key": cg_key
-    }
+    headers = {"accept": "application/json", "x-cg-demo-api-key": cg_key}
     try:
         response = requests.get(url, params=params, headers=headers, timeout=10)
-        if response.status_code == 429:
-            return None
+        if response.status_code == 429: return None
         response.raise_for_status()
         return response.json()
-    except Exception:
-        return None
+    except Exception: return None
 
-# --- FULL ANALYSIS LOGIC (CACHED FOR 1 MIN) ---
+# --- ANALYSIS LOGIC (CACHED FOR 1 MIN) ---
 @st.cache_data(ttl=60, show_spinner=False)
 def get_alpha_scan(direction, volatility, obscurity, gemini_key, cg_key):
-    # 1. Fetch Data
     page_index = max(1, int((obscurity / 100) * 10))
     coins = fetch_market_data(page_index, cg_key)
     
     if not coins:
         return None, "SYSTEM ALERT: Market data rate-limit or connection error. Retry in 60s."
 
-    # 2. Selection (Deterministic based on sliders)
     valid_coins = [c for c in coins if c.get('price_change_percentage_24h') is not None]
     coins_sorted_by_vol = sorted(valid_coins, key=lambda x: abs(x['price_change_percentage_24h']))
     
+    # Selection index handles float inputs
     target_idx = int((volatility / 100) * (len(coins_sorted_by_vol) - 1))
     target = coins_sorted_by_vol[max(0, min(len(coins_sorted_by_vol) - 1, target_idx))]
     
@@ -72,41 +69,43 @@ def get_alpha_scan(direction, volatility, obscurity, gemini_key, cg_key):
         "url": f"https://www.coingecko.com/en/coins/{target['id']}"
     }
 
-    # 3. AI Generation
     client = genai.Client(api_key=gemini_key)
-    
     prompt = (
         f"Research current market dynamics for {target_data['name']} ({target_data['symbol']}). "
         f"Provide a high-conviction, professional, and enthusiastic analysis justifying a {direction} position. "
-        f"STRICT CONSTRAINT: Do not use the 'It's not just X, it's Y' or 'This isn't just A, it's B' format. "
-        f"Avoid grandiose metaphors or operational analogies. "
-        f"Persuade using volume trends, specific sentiment, and price action. "
-        f"Contextualize Volatility ({volatility}/100) and Obscurity ({obscurity}/100) "
+        f"STRICT CONSTRAINT: Do not use 'It's not just X, it's Y' format. Avoid metaphors. "
+        f"Contextualize Volatility ({volatility:.5f}/100) and Obscurity ({obscurity:.5f}/100) "
         f"directly as trade variables. Max 125 words."
     )
     
     response = client.models.generate_content(
         model='gemini-2.5-flash',
         contents=prompt,
-        config=types.GenerateContentConfig(
-            tools=[types.Tool(google_search=types.GoogleSearch())]
-        )
+        config=types.GenerateContentConfig(tools=[types.Tool(google_search=types.GoogleSearch())])
     )
-    
     return target_data, response.text
 
 # --- UI INPUTS ---
 direction = st.selectbox("Position Bias:", ["LONG", "SHORT"])
 
+# High-precision sliders (5 decimal places)
 vol_val = st.slider(
     "Target Volatility (Delta):", 
-    0, 100, 50, 
+    min_value=0.0, 
+    max_value=100.0, 
+    value=st.session_state.vol_start, 
+    step=0.00001, 
+    format="%.5f",
     help=VOL_HELP
 )
 
 obs_val = st.slider(
     "Target Obscurity (Alpha Depth):", 
-    0, 100, 50, 
+    min_value=0.0, 
+    max_value=100.0, 
+    value=st.session_state.obs_start, 
+    step=0.00001, 
+    format="%.5f",
     help=OBS_HELP
 )
 
@@ -130,4 +129,4 @@ if st.button("Run Scan"):
         else:
             st.error(analysis_text)
 
-st.caption("v5.2.0")
+st.caption("v5.2.1")
