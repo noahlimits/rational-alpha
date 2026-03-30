@@ -5,33 +5,25 @@ from google import genai
 from google.genai import types
 
 # --- CONFIGURATION ---
-st.set_page_config(page_title="Rational Alpha", layout="wide")
+st.set_page_config(page_title="Rational Alpha", layout="centered")
 
-# --- SIDEBAR: SYSTEM PARAMETERS ---
-st.sidebar.header("System Parameters")
-
-st.sidebar.subheader("Target Volatility (Delta)")
-st.sidebar.write(
-    "**Volatility** measures the 24-hour price velocity of the asset. "
-    "\n\n* **High Delta:** Targets 'high-octane' assets currently experiencing significant price swings. "
-    "Ideal for aggressive momentum plays where volatility is the primary driver of opportunity."
-    "\n* **Low Delta:** Filters for assets in a consolidation phase or exhibiting stable price action, "
-    "providing a more controlled environment for long-term conviction."
-)
-
-st.sidebar.divider()
-
-st.sidebar.subheader("Target Obscurity (Alpha Depth)")
-st.sidebar.write(
-    "**Obscurity** defines the tier of market capitalization and liquidity depth."
-    "\n\n* **High Alpha Depth:** Pushes the scan into the market periphery—targeting micro-cap and low-volume assets. "
-    "This is where information asymmetry is greatest, allowing for identification before institutional radar detection."
-    "\n* **Low Alpha Depth:** Restricts the scan to high-liquidity 'blue chip' assets, focusing the thesis on "
-    "established market leaders with deep order books."
-)
-
-# --- MAIN TERMINAL ---
 st.title("🏛️ The Alpha Desk")
+
+# --- DEFINITIONS FOR TOOLTIPS ---
+VOL_HELP = (
+    "**Volatility (Delta)** measures 24-hour price velocity.\n\n"
+    "* **High Delta:** Targets 'high-octane' assets with significant price swings. "
+    "Ideal for aggressive momentum plays.\n"
+    "* **Low Delta:** Filters for consolidation or stable action, "
+    "providing a controlled environment for conviction."
+)
+
+OBS_HELP = (
+    "**Obscurity (Alpha Depth)** defines market cap and liquidity tier.\n\n"
+    "* **High Alpha Depth:** Targets the market periphery (micro-caps) where "
+    "information asymmetry is greatest.\n"
+    "* **Low Alpha Depth:** Restricts the scan to high-liquidity 'blue chip' assets."
+)
 
 # --- DATA FETCHING (CACHED FOR 1 MIN) ---
 @st.cache_data(ttl=60)
@@ -91,13 +83,19 @@ def get_alpha_scan(direction, volatility, obscurity, api_key):
     return target_data, response.text
 
 # --- UI INPUTS ---
-col1, col2, col3 = st.columns(3)
-with col1:
-    direction = st.selectbox("Position Bias:", ["LONG", "SHORT"])
-with col2:
-    vol_val = st.slider("Target Volatility (Delta):", 0, 100, 50)
-with col3:
-    obs_val = st.slider("Target Obscurity (Alpha Depth):", 0, 100, 50)
+direction = st.selectbox("Position Bias:", ["LONG", "SHORT"])
+
+vol_val = st.slider(
+    "Target Volatility (Delta):", 
+    0, 100, 50, 
+    help=VOL_HELP
+)
+
+obs_val = st.slider(
+    "Target Obscurity (Alpha Depth):", 
+    0, 100, 50, 
+    help=OBS_HELP
+)
 
 # --- EXECUTION ---
 if st.button("Run Scan"):
@@ -117,4 +115,4 @@ if st.button("Run Scan"):
         else:
             st.error(analysis_text)
 
-st.caption("v5.0.0")
+st.caption("v5.0.1")
