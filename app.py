@@ -26,7 +26,7 @@ OBS_HELP = (
 )
 
 # --- DATA FETCHING (CACHED FOR 1 MIN) ---
-@st.cache_data(ttl=60)
+@st.cache_data(ttl=60, show_spinner=False)
 def fetch_market_data(page):
     url = f"https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=100&page={page}&sparkline=false"
     try:
@@ -39,7 +39,7 @@ def fetch_market_data(page):
         return None
 
 # --- FULL ANALYSIS LOGIC (CACHED FOR 1 MIN) ---
-@st.cache_data(ttl=60)
+@st.cache_data(ttl=60, show_spinner=False)
 def get_alpha_scan(direction, volatility, obscurity, api_key):
     # 1. Fetch Data
     page_index = max(1, int((obscurity / 100) * 10))
@@ -64,7 +64,6 @@ def get_alpha_scan(direction, volatility, obscurity, api_key):
     # 3. AI Generation
     client = genai.Client(api_key=api_key)
     
-    # Strictly reinforced negative constraints to eliminate "LLM Slop"
     prompt = (
         f"Research current market dynamics for {target_data['name']} ({target_data['symbol']}). "
         f"Provide a high-conviction, professional, and enthusiastic analysis justifying a {direction} position. "
@@ -107,7 +106,7 @@ if st.button("Run Scan"):
         st.error("SYSTEM ERROR: API key not found.")
         st.stop()
 
-    with st.spinner("ISOLATING ASYMMETRIC OPPORTUNITY..."):
+    with st.spinner("ISOLATING OPPORTUNITY"):
         target_info, analysis_text = get_alpha_scan(direction, vol_val, obs_val, api_key)
         
         if target_info:
@@ -118,4 +117,4 @@ if st.button("Run Scan"):
         else:
             st.error(analysis_text)
 
-st.caption("v5.1.0")
+st.caption("v5.1.1")
