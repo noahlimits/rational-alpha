@@ -87,4 +87,4 @@ if st.button("Run Scan"):
         else:
             st.error(analysis_text)
 
-st.caption("v4.9.0 // TTL: 60s // Logic Engine: Gemini 2.5 Flash")
+st.caption("v4.9.0")
