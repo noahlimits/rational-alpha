@@ -5,19 +5,46 @@ from google import genai
 from google.genai import types
 
 # --- CONFIGURATION ---
-st.set_page_config(page_title="Rational Alpha", layout="centered")
+st.set_page_config(page_title="Rational Alpha", layout="wide")
 
+# --- SIDEBAR: SYSTEM PARAMETERS ---
+st.sidebar.header("System Parameters")
+
+st.sidebar.subheader("Target Volatility (Delta)")
+st.sidebar.write(
+    "**Volatility** measures the 24-hour price velocity of the asset. "
+    "\n\n* **High Delta:** Targets 'high-octane' assets currently experiencing significant price swings. "
+    "Ideal for aggressive momentum plays where volatility is the primary driver of opportunity."
+    "\n* **Low Delta:** Filters for assets in a consolidation phase or exhibiting stable price action, "
+    "providing a more controlled environment for long-term conviction."
+)
+
+st.sidebar.divider()
+
+st.sidebar.subheader("Target Obscurity (Alpha Depth)")
+st.sidebar.write(
+    "**Obscurity** defines the tier of market capitalization and liquidity depth."
+    "\n\n* **High Alpha Depth:** Pushes the scan into the market periphery—targeting micro-cap and low-volume assets. "
+    "This is where information asymmetry is greatest, allowing for identification before institutional radar detection."
+    "\n* **Low Alpha Depth:** Restricts the scan to high-liquidity 'blue chip' assets, focusing the thesis on "
+    "established market leaders with deep order books."
+)
+
+# --- MAIN TERMINAL ---
 st.title("🏛️ The Alpha Desk")
 
 # --- DATA FETCHING (CACHED FOR 1 MIN) ---
 @st.cache_data(ttl=60)
 def fetch_market_data(page):
     url = f"https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=100&page={page}&sparkline=false"
-    response = requests.get(url)
-    if response.status_code == 429:
+    try:
+        response = requests.get(url)
+        if response.status_code == 429:
+            return None
+        response.raise_for_status()
+        return response.json()
+    except Exception:
         return None
-    response.raise_for_status()
-    return response.json()
 
 # --- FULL ANALYSIS LOGIC (CACHED FOR 1 MIN) ---
 @st.cache_data(ttl=60)
@@ -64,9 +91,13 @@ def get_alpha_scan(direction, volatility, obscurity, api_key):
     return target_data, response.text
 
 # --- UI INPUTS ---
-direction = st.selectbox("Position Bias:", ["LONG", "SHORT"])
-vol_val = st.slider("Target Volatility (Delta):", 0, 100, 50)
-obs_val = st.slider("Target Obscurity (Alpha Depth):", 0, 100, 50)
+col1, col2, col3 = st.columns(3)
+with col1:
+    direction = st.selectbox("Position Bias:", ["LONG", "SHORT"])
+with col2:
+    vol_val = st.slider("Target Volatility (Delta):", 0, 100, 50)
+with col3:
+    obs_val = st.slider("Target Obscurity (Alpha Depth):", 0, 100, 50)
 
 # --- EXECUTION ---
 if st.button("Run Scan"):
@@ -76,15 +107,14 @@ if st.button("Run Scan"):
         st.stop()
 
     with st.spinner("SYNCHRONIZING MARKET DATA AND ANALYSIS..."):
-        # The target and text are generated/retrieved together to prevent desync
         target_info, analysis_text = get_alpha_scan(direction, vol_val, obs_val, api_key)
         
         if target_info:
-            # Renders both components at once
+            st.divider()
             st.markdown(f"## **TARGET IDENTIFIED:** [{target_info['name']} ({target_info['symbol']})]({target_info['url']})")
             st.subheader(f"Strategy: {direction}")
             st.info(analysis_text)
         else:
             st.error(analysis_text)
 
-st.caption("v4.9.0")
+st.caption("v5.0.0")
