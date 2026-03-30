@@ -27,10 +27,21 @@ OBS_HELP = (
 
 # --- DATA FETCHING (CACHED FOR 1 MIN) ---
 @st.cache_data(ttl=60, show_spinner=False)
-def fetch_market_data(page):
-    url = f"https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=100&page={page}&sparkline=false"
+def fetch_market_data(page, cg_key):
+    url = "https://api.coingecko.com/api/v3/coins/markets"
+    params = {
+        "vs_currency": "usd",
+        "order": "market_cap_desc",
+        "per_page": 100,
+        "page": page,
+        "sparkline": "false"
+    }
+    headers = {
+        "accept": "application/json",
+        "x-cg-demo-api-key": cg_key
+    }
     try:
-        response = requests.get(url)
+        response = requests.get(url, params=params, headers=headers, timeout=10)
         if response.status_code == 429:
             return None
         response.raise_for_status()
@@ -40,13 +51,13 @@ def fetch_market_data(page):
 
 # --- FULL ANALYSIS LOGIC (CACHED FOR 1 MIN) ---
 @st.cache_data(ttl=60, show_spinner=False)
-def get_alpha_scan(direction, volatility, obscurity, api_key):
+def get_alpha_scan(direction, volatility, obscurity, gemini_key, cg_key):
     # 1. Fetch Data
     page_index = max(1, int((obscurity / 100) * 10))
-    coins = fetch_market_data(page_index)
+    coins = fetch_market_data(page_index, cg_key)
     
     if not coins:
-        return None, "SYSTEM ALERT: Market data unavailable. Please retry in 60 seconds."
+        return None, "SYSTEM ALERT: Market data rate-limit or connection error. Retry in 60s."
 
     # 2. Selection (Deterministic based on sliders)
     valid_coins = [c for c in coins if c.get('price_change_percentage_24h') is not None]
@@ -62,15 +73,15 @@ def get_alpha_scan(direction, volatility, obscurity, api_key):
     }
 
     # 3. AI Generation
-    client = genai.Client(api_key=api_key)
+    client = genai.Client(api_key=gemini_key)
     
     prompt = (
         f"Research current market dynamics for {target_data['name']} ({target_data['symbol']}). "
         f"Provide a high-conviction, professional, and enthusiastic analysis justifying a {direction} position. "
         f"STRICT CONSTRAINT: Do not use the 'It's not just X, it's Y' or 'This isn't just A, it's B' format. "
-        f"Avoid grandiose metaphors (e.g., 'operational heartbeat,' 'digital gold,' 'engine of growth'). "
-        f"This is an institutional briefing. Be persuasive by using data, volume trends, and specific "
-        f"market sentiment. Contextualize Volatility ({volatility}/100) and Obscurity ({obscurity}/100) "
+        f"Avoid grandiose metaphors or operational analogies. "
+        f"Persuade using volume trends, specific sentiment, and price action. "
+        f"Contextualize Volatility ({volatility}/100) and Obscurity ({obscurity}/100) "
         f"directly as trade variables. Max 125 words."
     )
     
@@ -101,13 +112,15 @@ obs_val = st.slider(
 
 # --- EXECUTION ---
 if st.button("Run Scan"):
-    api_key = st.secrets.get("GEMINI_API_KEY")
-    if not api_key:
-        st.error("SYSTEM ERROR: API key not found.")
+    gemini_key = st.secrets.get("GEMINI_API_KEY")
+    cg_key = st.secrets.get("CG_API_KEY")
+    
+    if not gemini_key or not cg_key:
+        st.error("SYSTEM ERROR: API keys missing in Secrets.")
         st.stop()
 
     with st.spinner("ISOLATING OPPORTUNITY"):
-        target_info, analysis_text = get_alpha_scan(direction, vol_val, obs_val, api_key)
+        target_info, analysis_text = get_alpha_scan(direction, vol_val, obs_val, gemini_key, cg_key)
         
         if target_info:
             st.divider()
@@ -117,4 +130,4 @@ if st.button("Run Scan"):
         else:
             st.error(analysis_text)
 
-st.caption("v5.1.1")
+st.caption("v5.2.0")
