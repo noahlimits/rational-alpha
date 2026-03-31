@@ -7,7 +7,7 @@ from google.genai import types
 # --- CONFIGURATION ---
 st.set_page_config(page_title="Sentiment Sniper", layout="centered")
 
-# --- STABILIZED INFINITY PATH CSS (8s CYCLE) ---
+# --- STABILIZED INFINITY PATH CSS ---
 SCOPE_CSS = """
 <style>
 @keyframes followPath {
@@ -36,18 +36,11 @@ SCOPE_CSS = """
     border: 2px solid #FF4B4B;
     border-radius: 50%;
     position: absolute;
-    
-    /* Perfect Lemniscate (Infinity) Path */
     offset-path: path('M 50,50 C 50,0 100,0 150,50 C 200,100 250,100 250,50 C 250,0 200,0 150,50 C 100,100 50,100 50,50');
-    
-    /* STABILIZATION: Prevents the scope from rotating/rolling during the path */
     offset-rotate: 0deg;
-    
-    /* 8s duration (15% slower than v5.4.5) */
     animation: followPath 8s infinite linear;
 }
 
-/* Sniper Crosshairs */
 .scope::before {
     content: '';
     position: absolute;
@@ -89,6 +82,15 @@ if 'obs_start' not in st.session_state:
 
 st.title("Sentiment Sniper")
 
+# --- HIGH-LEVEL SYSTEM DESCRIPTION ---
+st.markdown("""
+**Sentiment Sniper** leverages a high-fidelity NLP ingestion layer powered by **Gemini** to 
+decode fragmented sentiment signals and narrative velocity. By mapping cross-exchange liquidity 
+depth against latent social indicators, the engine isolates asymmetric alpha opportunities 
+within specific volatility-obscurity clusters. It effectively compresses multi-dimensional 
+market noise into a singular, high-conviction execution thesis.
+""")
+
 # --- DATA & LOGIC ---
 @st.cache_data(ttl=60, show_spinner=False)
 def fetch_market_data(page, cg_key):
@@ -119,7 +121,8 @@ def get_alpha_scan(direction, volatility, obscurity, gemini_key, cg_key):
               f"STRICT CONSTRAINT: Do not use 'It's not just X, it's Y' or metaphors. "
               f"Tone: Casual but well-informed. Max 125 words.")
     
-    response = client.models.generate_content(model='gemini-2.5-flash', contents=prompt,
+    # Using the Gemini 3 Flash model (2026 current)
+    response = client.models.generate_content(model='gemini-3-flash', contents=prompt,
                                               config=types.GenerateContentConfig(tools=[types.Tool(google_search=types.GoogleSearch())]))
     return target_data, response.text
 
@@ -158,4 +161,4 @@ if st.button("Run Scan"):
     else:
         st.error("SYSTEM ERROR: API keys missing in Secrets.")
 
-st.caption("v5.4.6 | Data via [CoinGecko API](https://www.coingecko.com/en/api)")
+st.caption("v5.4.7 | Data via [CoinGecko API](https://www.coingecko.com/en/api)")
