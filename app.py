@@ -8,7 +8,7 @@ from google.genai import types
 # --- CONFIGURATION ---
 st.set_page_config(page_title="Sentiment Sniper", layout="centered")
 
-# --- STABILIZED INFINITY PATH CSS ---
+# --- STABILIZED INFINITY PATH CSS (8s CYCLE) ---
 SCOPE_CSS = """
 <style>
 @keyframes followPath {
@@ -83,11 +83,13 @@ if 'obs_start' not in st.session_state:
 
 st.title("Sentiment Sniper")
 
+# --- HIGH-LEVEL SYSTEM DESCRIPTION ---
 st.markdown("""
 **Sentiment Sniper** leverages a high-fidelity NLP ingestion layer powered by **Gemini** to 
 decode fragmented sentiment signals and narrative velocity. By mapping cross-exchange liquidity 
 depth against latent social indicators, the engine isolates asymmetric alpha opportunities 
-within specific volatility-obscurity clusters.
+within specific volatility-obscurity clusters. It effectively compresses multi-dimensional 
+market noise into a singular, high-conviction execution thesis.
 """)
 
 # --- DATA & LOGIC ---
@@ -103,7 +105,6 @@ def fetch_market_data(page, cg_key):
 
 @st.cache_data(ttl=60, show_spinner=False)
 def get_alpha_scan(direction, volatility, obscurity, gemini_key, cg_key):
-    # Narrative Cycle Logic for AUTO
     final_dir = direction
     if direction == "AUTO":
         now = datetime.datetime.now()
@@ -174,4 +175,4 @@ if st.button("Run Scan"):
     else:
         st.error("SYSTEM ERROR: API keys missing in Secrets.")
 
-st.caption("v5.5.0 | Data via [CoinGecko API](https://www.coingecko.com/en/api)")
+st.caption("v5.5.2 | Data via [CoinGecko API](https://www.coingecko.com/en/api)")
