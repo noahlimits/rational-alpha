@@ -5,7 +5,7 @@ from google import genai
 from google.genai import types
 
 # --- CONFIGURATION ---
-st.set_page_config(page_title="Rational Alpha", layout="centered")
+st.set_page_config(page_title="Sentiment Alpha", layout="centered")
 
 # --- SESSION STATE FOR RANDOM START ---
 if 'vol_start' not in st.session_state:
