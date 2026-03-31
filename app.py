@@ -7,7 +7,7 @@ from google.genai import types
 # --- CONFIGURATION ---
 st.set_page_config(page_title="Sentiment Sniper", layout="centered")
 
-# --- INFINITY PATH CSS (30% SLOWER) ---
+# --- STABILIZED INFINITY PATH CSS (8s CYCLE) ---
 SCOPE_CSS = """
 <style>
 @keyframes followPath {
@@ -26,7 +26,7 @@ SCOPE_CSS = """
 
 .scope-wrapper {
     position: relative;
-    width: 300px; /* Wider for clear infinity shape */
+    width: 300px;
     height: 100px;
 }
 
@@ -40,8 +40,11 @@ SCOPE_CSS = """
     /* Perfect Lemniscate (Infinity) Path */
     offset-path: path('M 50,50 C 50,0 100,0 150,50 C 200,100 250,100 250,50 C 250,0 200,0 150,50 C 100,100 50,100 50,50');
     
-    /* 7s duration (30% slower than v5.4.4) */
-    animation: followPath 7s infinite linear;
+    /* STABILIZATION: Prevents the scope from rotating/rolling during the path */
+    offset-rotate: 0deg;
+    
+    /* 8s duration (15% slower than v5.4.5) */
+    animation: followPath 8s infinite linear;
 }
 
 /* Sniper Crosshairs */
@@ -155,4 +158,4 @@ if st.button("Run Scan"):
     else:
         st.error("SYSTEM ERROR: API keys missing in Secrets.")
 
-st.caption("v5.4.5 | Data via [CoinGecko API](https://www.coingecko.com/en/api)")
+st.caption("v5.4.6 | Data via [CoinGecko API](https://www.coingecko.com/en/api)")
