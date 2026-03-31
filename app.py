@@ -8,15 +8,19 @@ from google.genai import types
 # --- CONFIGURATION ---
 st.set_page_config(page_title="Sentiment Sniper", layout="centered")
 
-# --- CUSTOM CSS FOR THE SNIPER SCOPE ---
+# --- CUSTOM CSS FOR FIGURE-EIGHT SCOPE ---
 SCOPE_CSS = """
 <style>
 @keyframes figureEight {
-    0% { transform: translate(0, 0); }
-    25% { transform: translate(60px, -30px); }
-    50% { transform: translate(0, 0); }
-    75% { transform: translate(-60px, 30px); }
-    100% { transform: translate(0, 0); }
+    0%   { transform: translate(0px, 0px); }
+    12.5% { transform: translate(40px, 20px); }
+    25%  { transform: translate(80px, 0px); }
+    37.5% { transform: translate(40px, -20px); }
+    50%  { transform: translate(0px, 0px); }
+    62.5% { transform: translate(-40px, 20px); }
+    75%  { transform: translate(-80px, 0px); }
+    87.5% { transform: translate(-40px, -20px); }
+    100% { transform: translate(0px, 0px); }
 }
 
 .scope-container {
@@ -24,35 +28,47 @@ SCOPE_CSS = """
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    height: 150px;
+    height: 180px;
     margin-bottom: 20px;
 }
 
 .scope {
-    width: 40px;
-    height: 40px;
+    width: 50px;
+    height: 50px;
     border: 2px solid #FF4B4B;
     border-radius: 50%;
     position: relative;
-    animation: figureEight 2s infinite ease-in-out;
+    animation: figureEight 3s infinite ease-in-out;
 }
 
-.scope::before, .scope::after {
+/* Sniper Crosshairs */
+.scope::before {
     content: '';
     position: absolute;
+    width: 100%;
+    height: 1px;
+    top: 50%;
+    left: 0;
     background: #FF4B4B;
 }
 
-/* Crosshairs */
-.scope::before { width: 100%; height: 1px; top: 50%; left: 0; }
-.scope::after { width: 1px; height: 100%; left: 50%; top: 0; }
+.scope::after {
+    content: '';
+    position: absolute;
+    width: 1px;
+    height: 100%;
+    left: 50%;
+    top: 0;
+    background: #FF4B4B;
+}
 
 .targeting-text {
-    font-family: monospace;
+    font-family: 'Courier New', Courier, monospace;
     color: #FF4B4B;
     font-weight: bold;
-    margin-top: 15px;
-    letter-spacing: 2px;
+    margin-top: 25px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
 }
 </style>
 """
@@ -66,7 +82,7 @@ if 'obs_start' not in st.session_state:
 
 st.title("Sentiment Sniper")
 
-# --- DATA & LOGIC (CACHED) ---
+# --- DATA & LOGIC ---
 @st.cache_data(ttl=60, show_spinner=False)
 def fetch_market_data(page, cg_key):
     url = "https://api.coingecko.com/api/v3/coins/markets"
@@ -92,8 +108,9 @@ def get_alpha_scan(direction, volatility, obscurity, gemini_key, cg_key):
 
     client = genai.Client(api_key=gemini_key)
     prompt = (f"Research {target_data['name']} ({target_data['symbol']}). "
-              f"Provide a professional analysis for a {direction} position. "
-              f"No 'It's not just X' format. No metaphors. Professional/Concise. Max 125 words.")
+              f"Provide a high-conviction analysis for a {direction} position. "
+              f"STRICT CONSTRAINT: Do not use 'It's not just X' or 'This isn't just A' formats. "
+              f"No metaphors. Professional and concise. Max 125 words.")
     
     response = client.models.generate_content(model='gemini-2.5-flash', contents=prompt,
                                               config=types.GenerateContentConfig(tools=[types.Tool(google_search=types.GoogleSearch())]))
@@ -104,7 +121,6 @@ direction = st.selectbox("Position Bias:", ["LONG", "SHORT"])
 vol_val = st.slider("Target Volatility (Delta):", 0.0, 100.0, st.session_state.vol_start, step=0.00001, format="%.5f")
 obs_val = st.slider("Target Obscurity (Alpha Depth):", 0.0, 100.0, st.session_state.obs_start, step=0.00001, format="%.5f")
 
-# Placeholder for the custom loading animation
 loader_placeholder = st.empty()
 
 if st.button("Run Scan"):
@@ -112,16 +128,12 @@ if st.button("Run Scan"):
     cg_key = st.secrets.get("CG_API_KEY")
     
     if gemini_key and cg_key:
-        # 1. Trigger Custom Sniper Animation
         loader_placeholder.markdown(
-            '<div class="scope-container"><div class="scope"></div><div class="targeting-text">TARGETING OPPORTUNITY...</div></div>', 
+            '<div class="scope-container"><div class="scope"></div><div class="targeting-text">Targeting Opportunity</div></div>', 
             unsafe_allow_html=True
         )
         
-        # 2. Run logic
         target_info, analysis_text = get_alpha_scan(direction, vol_val, obs_val, gemini_key, cg_key)
-        
-        # 3. Clear Animation
         loader_placeholder.empty()
         
         if target_info:
@@ -132,4 +144,4 @@ if st.button("Run Scan"):
     else:
         st.error("SYSTEM ERROR: API keys missing.")
 
-st.caption("v5.4.0 | Data via [CoinGecko API](https://www.coingecko.com/en/api)")
+st.caption("v5.4.1 | Data via [CoinGecko API](https://www.coingecko.com/en/api)")
