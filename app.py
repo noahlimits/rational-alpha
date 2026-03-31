@@ -1,25 +1,32 @@
 import streamlit as st
 import requests
 import random
-import time
 from google import genai
 from google.genai import types
 
 # --- CONFIGURATION ---
 st.set_page_config(page_title="Sentiment Sniper", layout="centered")
 
-# --- CUSTOM CSS FOR FIGURE-EIGHT SCOPE ---
+# --- SMOOTH FIGURE-EIGHT CSS ---
 SCOPE_CSS = """
 <style>
-@keyframes figureEight {
+@keyframes smoothEight {
     0%   { transform: translate(0px, 0px); }
-    12.5% { transform: translate(40px, 20px); }
+    6.25% { transform: translate(20px, 10px); }
+    12.5% { transform: translate(40px, 15px); }
+    18.75% { transform: translate(60px, 10px); }
     25%  { transform: translate(80px, 0px); }
-    37.5% { transform: translate(40px, -20px); }
+    31.25% { transform: translate(60px, -10px); }
+    37.5% { transform: translate(40px, -15px); }
+    43.75% { transform: translate(20px, -10px); }
     50%  { transform: translate(0px, 0px); }
-    62.5% { transform: translate(-40px, 20px); }
+    56.25% { transform: translate(-20px, 10px); }
+    62.5% { transform: translate(-40px, 15px); }
+    68.75% { transform: translate(-60px, 10px); }
     75%  { transform: translate(-80px, 0px); }
-    87.5% { transform: translate(-40px, -20px); }
+    81.25% { transform: translate(-60px, -10px); }
+    87.5% { transform: translate(-40px, -15px); }
+    93.75% { transform: translate(-20px, -10px); }
     100% { transform: translate(0px, 0px); }
 }
 
@@ -38,7 +45,7 @@ SCOPE_CSS = """
     border: 2px solid #FF4B4B;
     border-radius: 50%;
     position: relative;
-    animation: figureEight 3s infinite ease-in-out;
+    animation: smoothEight 4s infinite ease-in-out;
 }
 
 /* Sniper Crosshairs */
@@ -108,9 +115,9 @@ def get_alpha_scan(direction, volatility, obscurity, gemini_key, cg_key):
 
     client = genai.Client(api_key=gemini_key)
     prompt = (f"Research {target_data['name']} ({target_data['symbol']}). "
-              f"Provide a high-conviction analysis for a {direction} position. "
-              f"STRICT CONSTRAINT: Do not use 'It's not just X' or 'This isn't just A' formats. "
-              f"No metaphors. Professional and concise. Max 125 words.")
+              f"Provide a high-conviction, professional trade analysis for a {direction} position. "
+              f"STRICT CONSTRAINT: Do not use 'It's not just X, it's Y' or metaphors. "
+              f"Tone: Casual but well-informed. Max 125 words.")
     
     response = client.models.generate_content(model='gemini-2.5-flash', contents=prompt,
                                               config=types.GenerateContentConfig(tools=[types.Tool(google_search=types.GoogleSearch())]))
@@ -142,6 +149,6 @@ if st.button("Run Scan"):
             st.subheader(f"Strategy: {direction}")
             st.info(analysis_text)
     else:
-        st.error("SYSTEM ERROR: API keys missing.")
+        st.error("SYSTEM ERROR: API keys missing in Secrets.")
 
-st.caption("v5.4.1 | Data via [CoinGecko API](https://www.coingecko.com/en/api)")
+st.caption("v5.4.2 | Data via [CoinGecko API](https://www.coingecko.com/en/api)")
