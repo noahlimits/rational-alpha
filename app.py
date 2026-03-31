@@ -92,7 +92,7 @@ within specific volatility-obscurity clusters. It effectively compresses multi-d
 market noise into a singular, high-conviction execution thesis.
 """)
 
-# --- DATA FETCHING (CACHED) ---
+# --- DATA FETCHING ---
 @st.cache_data(ttl=60, show_spinner=False)
 def fetch_market_data(page, cg_key):
     url = "https://api.coingecko.com/api/v3/coins/markets"
@@ -103,10 +103,9 @@ def fetch_market_data(page, cg_key):
         return response.json() if response.status_code == 200 else None
     except: return None
 
-# --- ANALYSIS LOGIC WITH ROBUST ERROR HANDLING ---
+# --- ANALYSIS LOGIC ---
 @st.cache_data(ttl=60, show_spinner=False)
 def get_alpha_scan(direction, volatility, obscurity, gemini_key, cg_key):
-    # Determine final direction for AUTO
     final_dir = direction
     if direction == "AUTO":
         now = datetime.datetime.now()
@@ -116,7 +115,6 @@ def get_alpha_scan(direction, volatility, obscurity, gemini_key, cg_key):
         else:
             final_dir = "LONG" if chance < 0.75 else "SHORT"
 
-    # Select target asset
     page_index = max(1, int((obscurity / 100) * 10))
     coins = fetch_market_data(page_index, cg_key)
     if not coins: return None, "SYSTEM ALERT: Connection error. Retry in 60s.", final_dir
@@ -126,11 +124,7 @@ def get_alpha_scan(direction, volatility, obscurity, gemini_key, cg_key):
     target_idx = int((volatility / 100) * (len(coins_sorted_by_vol) - 1))
     target = coins_sorted_by_vol[max(0, min(len(coins_sorted_by_vol) - 1, target_idx))]
     
-    target_data = {
-        "name": target['name'], 
-        "symbol": target['symbol'].upper(), 
-        "url": f"https://www.coingecko.com/en/coins/{target['id']}"
-    }
+    target_data = {"name": target['name'], "symbol": target['symbol'].upper(), "url": f"https://www.coingecko.com/en/coins/{target['id']}"}
 
     client = genai.Client(api_key=gemini_key)
     prompt = (f"Research {target_data['name']} ({target_data['symbol']}). "
@@ -139,9 +133,9 @@ def get_alpha_scan(direction, volatility, obscurity, gemini_key, cg_key):
               f"Tone: Casual but well-informed. Max 125 words.")
     
     try:
-        # ATTEMPT 1: Primary Model with Search Tool
+        # Reverted to gemini-2.0-flash
         response = client.models.generate_content(
-            model='gemini-3-flash', 
+            model='gemini-2.0-flash', 
             contents=prompt,
             config=types.GenerateContentConfig(
                 tools=[types.Tool(google_search=types.GoogleSearch())]
@@ -150,16 +144,16 @@ def get_alpha_scan(direction, volatility, obscurity, gemini_key, cg_key):
         return target_data, response.text, final_dir
     except Exception:
         try:
-            # ATTEMPT 2: Fallback (No Tools) - Handles permission/400 errors
+            # Fallback (No Tools)
             response = client.models.generate_content(
-                model='gemini-3-flash', 
+                model='gemini-2.0-flash', 
                 contents=prompt
             )
-            return target_data, response.text + "\n\n*(Note: Real-time search offline due to API constraints)*", final_dir
+            return target_data, response.text + "\n\n*(Note: Real-time search offline)*", final_dir
         except Exception as e:
             return None, f"CRITICAL API ERROR: {str(e)}", final_dir
 
-# --- UI INTERFACE ---
+# --- UI ---
 direction = st.selectbox("Position Bias:", ["LONG", "SHORT", "AUTO"])
 
 if direction == "AUTO":
@@ -200,4 +194,4 @@ if st.button("Run Scan"):
     else:
         st.error("SYSTEM ERROR: API keys missing in Secrets.")
 
-st.caption("v5.5.3 | Data via [CoinGecko API](https://www.coingecko.com/en/api)")
+st.caption("v5.5.4 | Data via [CoinGecko API](https://www.coingecko.com/en/api)")
