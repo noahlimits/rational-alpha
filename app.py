@@ -7,27 +7,18 @@ from google.genai import types
 # --- CONFIGURATION ---
 st.set_page_config(page_title="Sentiment Sniper", layout="centered")
 
-# --- SMOOTH FIGURE-EIGHT CSS ---
+# --- MATHEMATICALLY SMOOTH FIGURE-EIGHT CSS ---
 SCOPE_CSS = """
 <style>
-@keyframes smoothEight {
-    0%   { transform: translate(0px, 0px); }
-    6.25% { transform: translate(20px, 10px); }
-    12.5% { transform: translate(40px, 15px); }
-    18.75% { transform: translate(60px, 10px); }
-    25%  { transform: translate(80px, 0px); }
-    31.25% { transform: translate(60px, -10px); }
-    37.5% { transform: translate(40px, -15px); }
-    43.75% { transform: translate(20px, -10px); }
-    50%  { transform: translate(0px, 0px); }
-    56.25% { transform: translate(-20px, 10px); }
-    62.5% { transform: translate(-40px, 15px); }
-    68.75% { transform: translate(-60px, 10px); }
-    75%  { transform: translate(-80px, 0px); }
-    81.25% { transform: translate(-60px, -10px); }
-    87.5% { transform: translate(-40px, -15px); }
-    93.75% { transform: translate(-20px, -10px); }
-    100% { transform: translate(0px, 0px); }
+@keyframes horizontal {
+    0%, 100% { left: -80px; }
+    50% { left: 80px; }
+}
+
+@keyframes vertical {
+    0%, 50%, 100% { top: 0px; }
+    25% { top: 25px; }
+    75% { top: -25px; }
 }
 
 .scope-container {
@@ -39,13 +30,25 @@ SCOPE_CSS = """
     margin-bottom: 20px;
 }
 
+.scope-wrapper {
+    position: relative;
+    width: 200px;
+    height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
 .scope {
     width: 50px;
     height: 50px;
     border: 2px solid #FF4B4B;
     border-radius: 50%;
-    position: relative;
-    animation: smoothEight 4s infinite ease-in-out;
+    position: absolute;
+    /* This combines the two oscillations for a perfect loop */
+    animation: 
+        horizontal 4s ease-in-out infinite,
+        vertical 2s ease-in-out infinite;
 }
 
 /* Sniper Crosshairs */
@@ -136,7 +139,14 @@ if st.button("Run Scan"):
     
     if gemini_key and cg_key:
         loader_placeholder.markdown(
-            '<div class="scope-container"><div class="scope"></div><div class="targeting-text">Targeting Opportunity</div></div>', 
+            '''
+            <div class="scope-container">
+                <div class="scope-wrapper">
+                    <div class="scope"></div>
+                </div>
+                <div class="targeting-text">Targeting Opportunity</div>
+            </div>
+            ''', 
             unsafe_allow_html=True
         )
         
@@ -151,4 +161,4 @@ if st.button("Run Scan"):
     else:
         st.error("SYSTEM ERROR: API keys missing in Secrets.")
 
-st.caption("v5.4.2 | Data via [CoinGecko API](https://www.coingecko.com/en/api)")
+st.caption("v5.3.5 | Data via [CoinGecko API](https://www.coingecko.com/en/api)")
