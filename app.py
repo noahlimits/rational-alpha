@@ -7,18 +7,12 @@ from google.genai import types
 # --- CONFIGURATION ---
 st.set_page_config(page_title="Sentiment Sniper", layout="centered")
 
-# --- REFINED FIGURE-EIGHT CSS (35% SLOWER) ---
+# --- INFINITY PATH CSS (30% SLOWER) ---
 SCOPE_CSS = """
 <style>
-@keyframes horizontal {
-    0%, 100% { left: -90px; }
-    50% { left: 90px; }
-}
-
-@keyframes vertical {
-    0%, 50%, 100% { top: 0px; }
-    25% { top: 35px; } /* Increased amplitude for clearer loops */
-    75% { top: -35px; }
+@keyframes followPath {
+    from { offset-distance: 0%; }
+    to { offset-distance: 100%; }
 }
 
 .scope-container {
@@ -32,11 +26,8 @@ SCOPE_CSS = """
 
 .scope-wrapper {
     position: relative;
-    width: 220px;
-    height: 80px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    width: 300px; /* Wider for clear infinity shape */
+    height: 100px;
 }
 
 .scope {
@@ -45,10 +36,12 @@ SCOPE_CSS = """
     border: 2px solid #FF4B4B;
     border-radius: 50%;
     position: absolute;
-    /* Durations slowed by 35% (4s -> 5.4s | 2s -> 2.7s) */
-    animation: 
-        horizontal 5.4s ease-in-out infinite,
-        vertical 2.7s ease-in-out infinite;
+    
+    /* Perfect Lemniscate (Infinity) Path */
+    offset-path: path('M 50,50 C 50,0 100,0 150,50 C 200,100 250,100 250,50 C 250,0 200,0 150,50 C 100,100 50,100 50,50');
+    
+    /* 7s duration (30% slower than v5.4.4) */
+    animation: followPath 7s infinite linear;
 }
 
 /* Sniper Crosshairs */
@@ -79,6 +72,7 @@ SCOPE_CSS = """
     margin-top: 30px;
     letter-spacing: 3px;
     text-transform: uppercase;
+    text-align: center;
 }
 </style>
 """
@@ -161,4 +155,4 @@ if st.button("Run Scan"):
     else:
         st.error("SYSTEM ERROR: API keys missing in Secrets.")
 
-st.caption("v5.4.4 | Data via [CoinGecko API](https://www.coingecko.com/en/api)")
+st.caption("v5.4.5 | Data via [CoinGecko API](https://www.coingecko.com/en/api)")
