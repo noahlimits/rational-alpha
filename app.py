@@ -15,7 +15,7 @@ if 'obs_start' not in st.session_state:
 
 st.title("🏛️ The Alpha Desk")
 
-# --- DEFINITIONS ---
+# --- DEFINITIONS FOR TOOLTIPS ---
 VOL_HELP = (
     "**Volatility (Delta)** measures 24-hour price velocity.\n\n"
     "* **High Delta:** Targets 'high-octane' assets with significant price swings.\n"
@@ -39,27 +39,33 @@ def fetch_market_data(page, cg_key):
         "page": page,
         "sparkline": "false"
     }
-    headers = {"accept": "application/json", "x-cg-demo-api-key": cg_key}
+    headers = {
+        "accept": "application/json",
+        "x-cg-demo-api-key": cg_key
+    }
     try:
         response = requests.get(url, params=params, headers=headers, timeout=10)
-        if response.status_code == 429: return None
+        if response.status_code == 429:
+            return None
         response.raise_for_status()
         return response.json()
-    except Exception: return None
+    except Exception:
+        return None
 
-# --- ANALYSIS LOGIC (CACHED FOR 1 MIN) ---
+# --- FULL ANALYSIS LOGIC (CACHED FOR 1 MIN) ---
 @st.cache_data(ttl=60, show_spinner=False)
 def get_alpha_scan(direction, volatility, obscurity, gemini_key, cg_key):
+    # 1. Fetch Data
     page_index = max(1, int((obscurity / 100) * 10))
     coins = fetch_market_data(page_index, cg_key)
     
     if not coins:
         return None, "SYSTEM ALERT: Market data rate-limit or connection error. Retry in 60s."
 
+    # 2. Selection (Deterministic based on sliders)
     valid_coins = [c for c in coins if c.get('price_change_percentage_24h') is not None]
     coins_sorted_by_vol = sorted(valid_coins, key=lambda x: abs(x['price_change_percentage_24h']))
     
-    # Selection index handles float inputs
     target_idx = int((volatility / 100) * (len(coins_sorted_by_vol) - 1))
     target = coins_sorted_by_vol[max(0, min(len(coins_sorted_by_vol) - 1, target_idx))]
     
@@ -69,11 +75,15 @@ def get_alpha_scan(direction, volatility, obscurity, gemini_key, cg_key):
         "url": f"https://www.coingecko.com/en/coins/{target['id']}"
     }
 
+    # 3. AI Generation
     client = genai.Client(api_key=gemini_key)
+    
     prompt = (
         f"Research current market dynamics for {target_data['name']} ({target_data['symbol']}). "
         f"Provide a high-conviction, professional, and enthusiastic analysis justifying a {direction} position. "
-        f"STRICT CONSTRAINT: Do not use 'It's not just X, it's Y' format. Avoid metaphors. "
+        f"STRICT CONSTRAINT: Do not use the 'It's not just X, it's Y' format. "
+        f"Avoid grandiose metaphors or operational analogies. Tone: Casual but professional and well-informed. "
+        f"Persuade using volume trends, specific sentiment, and price action. "
         f"Contextualize Volatility ({volatility:.5f}/100) and Obscurity ({obscurity:.5f}/100) "
         f"directly as trade variables. Max 125 words."
     )
@@ -81,14 +91,16 @@ def get_alpha_scan(direction, volatility, obscurity, gemini_key, cg_key):
     response = client.models.generate_content(
         model='gemini-2.5-flash',
         contents=prompt,
-        config=types.GenerateContentConfig(tools=[types.Tool(google_search=types.GoogleSearch())])
+        config=types.GenerateContentConfig(
+            tools=[types.Tool(google_search=types.GoogleSearch())]
+        )
     )
+    
     return target_data, response.text
 
 # --- UI INPUTS ---
 direction = st.selectbox("Position Bias:", ["LONG", "SHORT"])
 
-# High-precision sliders (5 decimal places)
 vol_val = st.slider(
     "Target Volatility (Delta):", 
     min_value=0.0, 
@@ -129,4 +141,5 @@ if st.button("Run Scan"):
         else:
             st.error(analysis_text)
 
-st.caption("v5.2.1")
+# attribution link to stay in good standing with Demo API plan
+st.caption("v5.2.2 | Data via [CoinGecko API](https://www.coingecko.com/en/api)")
