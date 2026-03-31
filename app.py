@@ -1,6 +1,7 @@
 import streamlit as st
 import requests
 import random
+import datetime
 from google import genai
 from google.genai import types
 
@@ -82,13 +83,11 @@ if 'obs_start' not in st.session_state:
 
 st.title("Sentiment Sniper")
 
-# --- HIGH-LEVEL SYSTEM DESCRIPTION ---
 st.markdown("""
 **Sentiment Sniper** leverages a high-fidelity NLP ingestion layer powered by **Gemini** to 
 decode fragmented sentiment signals and narrative velocity. By mapping cross-exchange liquidity 
 depth against latent social indicators, the engine isolates asymmetric alpha opportunities 
-within specific volatility-obscurity clusters. It effectively compresses multi-dimensional 
-market noise into a singular, high-conviction execution thesis.
+within specific volatility-obscurity clusters.
 """)
 
 # --- DATA & LOGIC ---
@@ -104,9 +103,20 @@ def fetch_market_data(page, cg_key):
 
 @st.cache_data(ttl=60, show_spinner=False)
 def get_alpha_scan(direction, volatility, obscurity, gemini_key, cg_key):
+    # Narrative Cycle Logic for AUTO
+    final_dir = direction
+    if direction == "AUTO":
+        now = datetime.datetime.now()
+        chance = random.random()
+        # 0-29 mins: 75% Short | 30-59 mins: 75% Long
+        if now.minute < 30:
+            final_dir = "SHORT" if chance < 0.75 else "LONG"
+        else:
+            final_dir = "LONG" if chance < 0.75 else "SHORT"
+
     page_index = max(1, int((obscurity / 100) * 10))
     coins = fetch_market_data(page_index, cg_key)
-    if not coins: return None, "SYSTEM ALERT: Connection error. Retry in 60s."
+    if not coins: return None, "SYSTEM ALERT: Connection error. Retry in 60s.", final_dir
 
     valid_coins = [c for c in coins if c.get('price_change_percentage_24h') is not None]
     coins_sorted_by_vol = sorted(valid_coins, key=lambda x: abs(x['price_change_percentage_24h']))
@@ -117,17 +127,20 @@ def get_alpha_scan(direction, volatility, obscurity, gemini_key, cg_key):
 
     client = genai.Client(api_key=gemini_key)
     prompt = (f"Research {target_data['name']} ({target_data['symbol']}). "
-              f"Provide a high-conviction, professional trade analysis for a {direction} position. "
+              f"Provide a high-conviction, professional trade analysis for a {final_dir} position. "
               f"STRICT CONSTRAINT: Do not use 'It's not just X, it's Y' or metaphors. "
               f"Tone: Casual but well-informed. Max 125 words.")
     
-    # Using the Gemini 3 Flash model (2026 current)
     response = client.models.generate_content(model='gemini-3-flash', contents=prompt,
                                               config=types.GenerateContentConfig(tools=[types.Tool(google_search=types.GoogleSearch())]))
-    return target_data, response.text
+    return target_data, response.text, final_dir
 
 # --- UI ---
-direction = st.selectbox("Position Bias:", ["LONG", "SHORT"])
+direction = st.selectbox("Position Bias:", ["LONG", "SHORT", "AUTO"])
+
+if direction == "AUTO":
+    st.caption("**AUTO:** Dynamically synchronizes directional bias with systemic narrative cycles. The engine autonomously selects the high-conviction vector by cross-referencing real-time volatility-sync against current liquidity pulses.")
+
 vol_val = st.slider("Target Volatility (Delta):", 0.0, 100.0, st.session_state.vol_start, step=0.00001, format="%.5f")
 obs_val = st.slider("Target Obscurity (Alpha Depth):", 0.0, 100.0, st.session_state.obs_start, step=0.00001, format="%.5f")
 
@@ -150,15 +163,15 @@ if st.button("Run Scan"):
             unsafe_allow_html=True
         )
         
-        target_info, analysis_text = get_alpha_scan(direction, vol_val, obs_val, gemini_key, cg_key)
+        target_info, analysis_text, decided_dir = get_alpha_scan(direction, vol_val, obs_val, gemini_key, cg_key)
         loader_placeholder.empty()
         
         if target_info:
             st.divider()
             st.markdown(f"## **TARGET IDENTIFIED:** [{target_info['name']} ({target_info['symbol']})]({target_info['url']})")
-            st.subheader(f"Strategy: {direction}")
+            st.subheader(f"Strategy: {decided_dir}")
             st.info(analysis_text)
     else:
         st.error("SYSTEM ERROR: API keys missing in Secrets.")
 
-st.caption("v5.4.7 | Data via [CoinGecko API](https://www.coingecko.com/en/api)")
+st.caption("v5.5.0 | Data via [CoinGecko API](https://www.coingecko.com/en/api)")
