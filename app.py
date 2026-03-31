@@ -133,9 +133,9 @@ def get_alpha_scan(direction, volatility, obscurity, gemini_key, cg_key):
               f"Tone: Casual but well-informed. Max 125 words.")
     
     try:
-        # Reverted to gemini-2.0-flash
+        # Restored to the working 2.5 architecture
         response = client.models.generate_content(
-            model='gemini-2.0-flash', 
+            model='gemini-2.5-flash', 
             contents=prompt,
             config=types.GenerateContentConfig(
                 tools=[types.Tool(google_search=types.GoogleSearch())]
@@ -146,7 +146,7 @@ def get_alpha_scan(direction, volatility, obscurity, gemini_key, cg_key):
         try:
             # Fallback (No Tools)
             response = client.models.generate_content(
-                model='gemini-2.0-flash', 
+                model='gemini-2.5-flash', 
                 contents=prompt
             )
             return target_data, response.text + "\n\n*(Note: Real-time search offline)*", final_dir
@@ -194,4 +194,4 @@ if st.button("Run Scan"):
     else:
         st.error("SYSTEM ERROR: API keys missing in Secrets.")
 
-st.caption("v5.5.4 | Data via [CoinGecko API](https://www.coingecko.com/en/api)")
+st.caption("v5.5.5 | Data via [CoinGecko API](https://www.coingecko.com/en/api)")
