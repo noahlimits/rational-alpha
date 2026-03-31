@@ -7,18 +7,18 @@ from google.genai import types
 # --- CONFIGURATION ---
 st.set_page_config(page_title="Sentiment Sniper", layout="centered")
 
-# --- MATHEMATICALLY SMOOTH FIGURE-EIGHT CSS ---
+# --- REFINED FIGURE-EIGHT CSS (35% SLOWER) ---
 SCOPE_CSS = """
 <style>
 @keyframes horizontal {
-    0%, 100% { left: -80px; }
-    50% { left: 80px; }
+    0%, 100% { left: -90px; }
+    50% { left: 90px; }
 }
 
 @keyframes vertical {
     0%, 50%, 100% { top: 0px; }
-    25% { top: 25px; }
-    75% { top: -25px; }
+    25% { top: 35px; } /* Increased amplitude for clearer loops */
+    75% { top: -35px; }
 }
 
 .scope-container {
@@ -26,14 +26,14 @@ SCOPE_CSS = """
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    height: 180px;
+    height: 200px;
     margin-bottom: 20px;
 }
 
 .scope-wrapper {
     position: relative;
-    width: 200px;
-    height: 60px;
+    width: 220px;
+    height: 80px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -45,10 +45,10 @@ SCOPE_CSS = """
     border: 2px solid #FF4B4B;
     border-radius: 50%;
     position: absolute;
-    /* This combines the two oscillations for a perfect loop */
+    /* Durations slowed by 35% (4s -> 5.4s | 2s -> 2.7s) */
     animation: 
-        horizontal 4s ease-in-out infinite,
-        vertical 2s ease-in-out infinite;
+        horizontal 5.4s ease-in-out infinite,
+        vertical 2.7s ease-in-out infinite;
 }
 
 /* Sniper Crosshairs */
@@ -76,7 +76,7 @@ SCOPE_CSS = """
     font-family: 'Courier New', Courier, monospace;
     color: #FF4B4B;
     font-weight: bold;
-    margin-top: 25px;
+    margin-top: 30px;
     letter-spacing: 3px;
     text-transform: uppercase;
 }
@@ -161,4 +161,4 @@ if st.button("Run Scan"):
     else:
         st.error("SYSTEM ERROR: API keys missing in Secrets.")
 
-st.caption("v5.3.5 | Data via [CoinGecko API](https://www.coingecko.com/en/api)")
+st.caption("v5.4.4 | Data via [CoinGecko API](https://www.coingecko.com/en/api)")
