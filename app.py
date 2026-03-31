@@ -8,7 +8,7 @@ from google.genai import types
 # --- CONFIGURATION ---
 st.set_page_config(page_title="Sentiment Sniper", layout="centered")
 
-# --- STABILIZED INFINITY PATH CSS (8s CYCLE) ---
+# --- STABILIZED INFINITY PATH CSS ---
 SCOPE_CSS = """
 <style>
 @keyframes followPath {
@@ -92,7 +92,7 @@ within specific volatility-obscurity clusters. It effectively compresses multi-d
 market noise into a singular, high-conviction execution thesis.
 """)
 
-# --- DATA & LOGIC ---
+# --- DATA FETCHING (CACHED) ---
 @st.cache_data(ttl=60, show_spinner=False)
 def fetch_market_data(page, cg_key):
     url = "https://api.coingecko.com/api/v3/coins/markets"
@@ -103,18 +103,20 @@ def fetch_market_data(page, cg_key):
         return response.json() if response.status_code == 200 else None
     except: return None
 
+# --- ANALYSIS LOGIC WITH ROBUST ERROR HANDLING ---
 @st.cache_data(ttl=60, show_spinner=False)
 def get_alpha_scan(direction, volatility, obscurity, gemini_key, cg_key):
+    # Determine final direction for AUTO
     final_dir = direction
     if direction == "AUTO":
         now = datetime.datetime.now()
         chance = random.random()
-        # 0-29 mins: 75% Short | 30-59 mins: 75% Long
         if now.minute < 30:
             final_dir = "SHORT" if chance < 0.75 else "LONG"
         else:
             final_dir = "LONG" if chance < 0.75 else "SHORT"
 
+    # Select target asset
     page_index = max(1, int((obscurity / 100) * 10))
     coins = fetch_market_data(page_index, cg_key)
     if not coins: return None, "SYSTEM ALERT: Connection error. Retry in 60s.", final_dir
@@ -124,7 +126,11 @@ def get_alpha_scan(direction, volatility, obscurity, gemini_key, cg_key):
     target_idx = int((volatility / 100) * (len(coins_sorted_by_vol) - 1))
     target = coins_sorted_by_vol[max(0, min(len(coins_sorted_by_vol) - 1, target_idx))]
     
-    target_data = {"name": target['name'], "symbol": target['symbol'].upper(), "url": f"https://www.coingecko.com/en/coins/{target['id']}"}
+    target_data = {
+        "name": target['name'], 
+        "symbol": target['symbol'].upper(), 
+        "url": f"https://www.coingecko.com/en/coins/{target['id']}"
+    }
 
     client = genai.Client(api_key=gemini_key)
     prompt = (f"Research {target_data['name']} ({target_data['symbol']}). "
@@ -132,11 +138,28 @@ def get_alpha_scan(direction, volatility, obscurity, gemini_key, cg_key):
               f"STRICT CONSTRAINT: Do not use 'It's not just X, it's Y' or metaphors. "
               f"Tone: Casual but well-informed. Max 125 words.")
     
-    response = client.models.generate_content(model='gemini-3-flash', contents=prompt,
-                                              config=types.GenerateContentConfig(tools=[types.Tool(google_search=types.GoogleSearch())]))
-    return target_data, response.text, final_dir
+    try:
+        # ATTEMPT 1: Primary Model with Search Tool
+        response = client.models.generate_content(
+            model='gemini-3-flash', 
+            contents=prompt,
+            config=types.GenerateContentConfig(
+                tools=[types.Tool(google_search=types.GoogleSearch())]
+            )
+        )
+        return target_data, response.text, final_dir
+    except Exception:
+        try:
+            # ATTEMPT 2: Fallback (No Tools) - Handles permission/400 errors
+            response = client.models.generate_content(
+                model='gemini-3-flash', 
+                contents=prompt
+            )
+            return target_data, response.text + "\n\n*(Note: Real-time search offline due to API constraints)*", final_dir
+        except Exception as e:
+            return None, f"CRITICAL API ERROR: {str(e)}", final_dir
 
-# --- UI ---
+# --- UI INTERFACE ---
 direction = st.selectbox("Position Bias:", ["LONG", "SHORT", "AUTO"])
 
 if direction == "AUTO":
@@ -172,7 +195,9 @@ if st.button("Run Scan"):
             st.markdown(f"## **TARGET IDENTIFIED:** [{target_info['name']} ({target_info['symbol']})]({target_info['url']})")
             st.subheader(f"Strategy: {decided_dir}")
             st.info(analysis_text)
+        else:
+            st.error(analysis_text)
     else:
         st.error("SYSTEM ERROR: API keys missing in Secrets.")
 
-st.caption("v5.5.2 | Data via [CoinGecko API](https://www.coingecko.com/en/api)")
+st.caption("v5.5.3 | Data via [CoinGecko API](https://www.coingecko.com/en/api)")
