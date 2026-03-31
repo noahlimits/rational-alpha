@@ -129,7 +129,7 @@ if st.button("Run Scan"):
         st.error("SYSTEM ERROR: API keys missing in Secrets.")
         st.stop()
 
-    with st.spinner("ISOLATING OPPORTUNITY"):
+    with st.spinner("TARGETING OPPORTUNITY"):
         target_info, analysis_text = get_alpha_scan(direction, vol_val, obs_val, gemini_key, cg_key)
         
         if target_info:
@@ -140,4 +140,4 @@ if st.button("Run Scan"):
         else:
             st.error(analysis_text)
 
-st.caption("v5.3.4 | Data via [CoinGecko API](https://www.coingecko.com/en/api)")
+st.caption("v5.3.5 | Data via [CoinGecko API](https://www.coingecko.com/en/api)")
