@@ -13,7 +13,7 @@ if 'vol_start' not in st.session_state:
 if 'obs_start' not in st.session_state:
     st.session_state.obs_start = random.uniform(0.0, 100.0)
 
-st.title("🎯 Sentiment Sniper")
+st.title("Sentiment Sniper")
 
 # --- DEFINITIONS ---
 VOL_HELP = (
